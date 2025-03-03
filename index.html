@@ -184,21 +184,31 @@
         }
 
         .node-info {
-            margin-bottom: 10px;
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 4px;
-            font-size: 12px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            font-size: 14px;
+            border: 1px solid #ddd;
         }
 
         .node-info h3 {
-            margin: 0 0 8px 0;
+            margin: 0 0 12px 0;
             color: #333;
-            font-size: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
         }
 
         .node-info p {
-            margin: 5px 0;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+
+        .node-info strong {
+            color: #555;
+            margin-right: 8px;
         }
 
         .list-container {
@@ -359,6 +369,40 @@
             border-radius: 4px;
             display: block;
         }
+
+        .condition-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+
+        .condition-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .condition-toggle button {
+            padding: 4px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+
+        .condition-toggle button.true {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .condition-toggle button.false {
+            background: #f44336;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -374,6 +418,7 @@
                 <button id="deleteMode" class="mode-button">刪除模式</button>
                 <button id="exportYaml" class="mode-button" style="background: #007bff;">導出YAML</button>
                 <button id="importYamlBtn" class="mode-button" style="background: #e6a800;">匯入YAML</button>
+                <button id="conditionManagerBtn" class="mode-button" style="background: #9c27b0;">條件管理</button>
             </div>
         </header>
         <div id="graph-container">
@@ -460,6 +505,15 @@
         </div>
     </div>
 
+    <div id="condition-manager-panel" class="yaml-panel">
+        <h3>條件管理</h3>
+        <div id="condition-list" class="list-container" style="text-align: left; max-height: 400px;">
+        </div>
+        <div class="edit-buttons">
+            <button class="cancel-button" id="close-condition-manager">關閉</button>
+        </div>
+    </div>
+
     <script>
         class Node {
             constructor(x, y, radius, label) {
@@ -475,6 +529,8 @@
                 this.events = [];
                 this.target = '';
                 this.isRed = false;
+                this.isReachable = true;
+                this.orderNumber = 0;
             }
 
             draw(ctx) {
@@ -483,7 +539,11 @@
                 if (this.isHighlighted) {
                     ctx.fillStyle = this.isRed ? '#ff7070' : '#666666';
                 } else {
-                    ctx.fillStyle = this.isRed ? '#ff0000' : '#000000';
+                    if (!this.isReachable) {
+                        ctx.fillStyle = this.isRed ? '#A57777' : '#888888';
+                    } else {
+                        ctx.fillStyle = this.isRed ? '#ff0000' : '#000000';
+                    }
                 }
                 ctx.fill();
                 ctx.closePath();
@@ -634,6 +694,9 @@
             // 添加全局條件和事件集合
             const globalConditions = new Set();
             const globalEvents = new Set();
+            
+            // 添加條件狀態管理
+            const conditionStates = new Map();
 
             function showEditPanel(node) {
                 currentEditingNode = node;
@@ -643,6 +706,7 @@
                 nodeInfoDiv.innerHTML = `
                     <p><strong>當前ID：</strong>${node.label}</p>
                     <p><strong>節點顏色：</strong>${node.isRed ? '紅色' : '黑色'}</p>
+                    <p><strong>順序編號：</strong>${node.orderNumber > 0 ? '#' + node.orderNumber : '無'}</p>
                 `;
 
                 // 更新節點連接信息
@@ -787,6 +851,7 @@
             const deleteButton = document.getElementById('deleteMode');
             const exportButton = document.getElementById('exportYaml');
             const importYamlBtn = document.getElementById('importYamlBtn');
+            const conditionManagerBtn = document.getElementById('conditionManagerBtn');
             let isDragging = false;
             let dragStartX = 0;
             let dragStartY = 0;
@@ -817,6 +882,7 @@
             editButton.addEventListener('click', () => setMode('edit'));
             moveButton.addEventListener('click', () => setMode('move'));
             deleteButton.addEventListener('click', () => setMode('delete'));
+            conditionManagerBtn.addEventListener('click', () => setMode('conditionManager'));
 
             function resizeCanvas() {
                 const container = document.getElementById('graph-container');
@@ -826,9 +892,8 @@
 
             function redraw() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
+                updateNodeReachability(); // 在重繪之前更新節點可達性
                 edges.forEach(edge => edge.draw(ctx));
-                
                 nodes.forEach(node => node.draw(ctx));
             }
 
@@ -1003,9 +1068,10 @@
                     let isReadingText = false;
                     let currentText = [];
                     
-                    // 清空全局集合
+                    // 清空全局集合和條件狀態
                     globalConditions.clear();
                     globalEvents.clear();
+                    conditionStates.clear();
                     
                     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
                         try {
@@ -1244,12 +1310,20 @@
                 nodes.length = 0;
                 edges.length = 0;
 
-                // 創建所有節點，但暫時不設置位置
-                data.nodes.forEach((nodeData, nodeId) => {
+                // 根據文本內容對節點進行排序
+                const sortedNodes = Array.from(data.nodes.entries()).sort((a, b) => {
+                    const textA = a[1].text || '';
+                    const textB = b[1].text || '';
+                    return textA.localeCompare(textB, 'zh-TW');
+                });
+
+                // 創建所有節點，設置位置和順序編號
+                sortedNodes.forEach(([nodeId, nodeData], index) => {
                     const node = new Node(0, 0, 40, nodeId);
                     node.text = nodeData.text;
                     node.conditions = nodeData.conditions;
                     node.events = nodeData.events;
+                    node.orderNumber = index + 1; // 設置順序編號，從1開始
                     nodes.push(node);
                 });
 
@@ -1482,6 +1556,10 @@
                 const condition = input.value.trim();
                 if (condition) {
                     tempConditions.push(condition);
+                    globalConditions.add(condition);
+                    if (!conditionStates.has(condition)) {
+                        conditionStates.set(condition, false); // 默認設置為 false
+                    }
                     updateConditionsEditList();
                     input.value = '';
                 }
@@ -1554,6 +1632,119 @@
                 document.getElementById('yaml-display-panel').style.display = 'none';
                 document.getElementById('overlay').style.display = 'none';
             });
+
+            // 修改條件管理按鈕的事件處理
+            conditionManagerBtn.addEventListener('click', () => {
+                document.getElementById('condition-manager-panel').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+                updateConditionManagerPanel();
+            });
+
+            // 添加關閉按鈕的事件處理
+            document.getElementById('close-condition-manager').addEventListener('click', () => {
+                document.getElementById('condition-manager-panel').style.display = 'none';
+                document.getElementById('overlay').style.display = 'none';
+            });
+
+            function updateConditionManagerPanel() {
+                const container = document.getElementById('condition-list');
+                container.innerHTML = '';
+                
+                const sortedConditions = Array.from(globalConditions).sort();
+                
+                sortedConditions.forEach(condition => {
+                    const item = document.createElement('div');
+                    item.className = 'condition-item';
+                    
+                    const conditionName = document.createElement('span');
+                    conditionName.textContent = condition;
+                    
+                    const toggleContainer = document.createElement('div');
+                    toggleContainer.className = 'condition-toggle';
+                    
+                    const toggleButton = document.createElement('button');
+                    const isTrue = conditionStates.get(condition) === true;
+                    toggleButton.textContent = isTrue ? 'True' : 'False';
+                    toggleButton.className = isTrue ? 'true' : 'false';
+                    
+                    toggleButton.addEventListener('click', () => {
+                        const newState = !conditionStates.get(condition);
+                        conditionStates.set(condition, newState);
+                        toggleButton.textContent = newState ? 'True' : 'False';
+                        toggleButton.className = newState ? 'true' : 'false';
+                        redraw(); // 更新節點顯示
+                    });
+                    
+                    toggleContainer.appendChild(toggleButton);
+                    
+                    item.appendChild(conditionName);
+                    item.appendChild(toggleContainer);
+                    container.appendChild(item);
+                });
+            }
+
+            function updateNodeReachability() {
+                // 重置所有節點的可達性
+                nodes.forEach(node => {
+                    node.isReachable = true;
+                });
+
+                // 檢查條件
+                nodes.forEach(node => {
+                    if (node.conditions.some(condition => conditionStates.get(condition) === false)) {
+                        node.isReachable = false;
+                    }
+                });
+
+                // 檢查是否有路徑可以到達
+                const reachableNodes = new Set();
+                
+                // 找出所有沒有入邊的節點（起始節點）
+                const startNodes = nodes.filter(node => {
+                    return !edges.some(edge => edge.endNode === node);
+                });
+
+                // 使用 DFS 遍歷所有可達節點，並記錄選擇的路徑
+                function dfs(node) {
+                    if (!node.isReachable) return; // 如果節點因條件而不可達，停止遍歷
+                    if (reachableNodes.has(node)) return;
+                    reachableNodes.add(node);
+                    
+                    // 獲取所有子節點
+                    const childEdges = edges.filter(edge => edge.startNode === node);
+                    if (childEdges.length > 0) {
+                        // 按照順序編號排序子節點
+                        const sortedChildren = childEdges
+                            .map(edge => edge.endNode)
+                            .filter(child => child.isReachable) // 只考慮條件允許可達的子節點
+                            .sort((a, b) => (a.orderNumber || Infinity) - (b.orderNumber || Infinity));
+
+                        // 如果有可達的子節點
+                        if (sortedChildren.length > 0) {
+                            // 只遍歷順序編號最小的子節點
+                            const selectedChild = sortedChildren[0];
+                            dfs(selectedChild);
+                            
+                            // 其他子節點標記為不可達
+                            sortedChildren.slice(1).forEach(child => {
+                                child.isReachable = false;
+                            });
+                        }
+                    }
+                }
+
+                // 從每個起始節點開始遍歷
+                startNodes.forEach(node => {
+                    dfs(node);
+                });
+
+                // 更新節點的可達性
+                nodes.forEach(node => {
+                    if (!reachableNodes.has(node)) {
+                        node.isReachable = false;
+                    }
+                });
+            }
 
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
