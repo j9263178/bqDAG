@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetonQuest DAG nice1104</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .animated-title {
+            animation: fadeIn 1.5s ease-in;
+            transition: transform 0.3s ease;
+        }
+        .animated-title:hover {
+            transform: scale(1.1);
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #graph-container {
+            width: 100%;
+            height: 600px;
+            position: relative;
+            margin-top: 20px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-link:hover {
+            background: #0056b3;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .mode-button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 20px;
+            background: #6c757d;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .mode-button.active {
+            background: #28a745;
+        }
+
+        .mode-button:hover {
+            background: #5a6268;
+        }
+
+        .mode-button.active:hover {
+            background: #218838;
+        }
+
+        #edit-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .edit-field {
+            margin-bottom: 12px;
+        }
+
+        .edit-field label {
+            display: block;
+            margin-bottom: 4px;
+            color: #333;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .edit-field input, .edit-field textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .edit-field textarea {
+            height: 40px;
+            resize: vertical;
+        }
+
+        .edit-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .edit-buttons button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 12px;
+        }
+
+        .save-button {
+            background: #28a745;
+            color: white;
+        }
+
+        .save-button:hover {
+            background: #218838;
+        }
+
+        .cancel-button {
+            background: #dc3545;
+            color: white;
+        }
+
+        .cancel-button:hover {
+            background: #c82333;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .node-info {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .node-info h3 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .node-info p {
+            margin: 4px 0;
+        }
+
+        .list-container {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            padding: 8px;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            margin: 4px 0;
+            background: #f8f8f8;
+            border-radius: 4px;
+        }
+
+        .list-item button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+
+        .list-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .list-controls input {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .add-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+
+        .list-edit-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 1001;
+            width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .list-edit-panel h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .list-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            padding: 8px;
+        }
+
+        #yaml-display-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 1001;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+        }
+
+        #yaml-content {
+            width: 100%;
+            height: 400px;
+            margin: 10px 0;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre;
+            overflow: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .copy-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .copy-button:hover {
+            background: #0056b3;
+        }
+
+        .yaml-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 1001;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            text-align: center;
+        }
+
+        .yaml-panel h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .yaml-panel textarea {
+            width: calc(100% - 20px);
+            height: 400px;
+            margin: 10px auto;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre;
+            resize: vertical;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="animated-title">BetonQuest DAG nice1104</h1>
+            <p>點擊畫布來添加, 拖曳節點和創建連接！點擊節點可編輯。注意黑色節點規範為npc_options，紅色節點為player_options。</p>
+            <div class="controls">
+                <button id="addNodeMode" class="mode-button active">添加節點模式</button>
+                <button id="addEdgeMode" class="mode-button">添加連接模式</button>
+                <button id="editMode" class="mode-button">編輯模式</button>
+                <button id="moveMode" class="mode-button">移動模式</button>
+                <button id="deleteMode" class="mode-button">刪除模式</button>
+                <button id="exportYaml" class="mode-button" style="background: #007bff;">導出YAML</button>
+                <button id="importYamlBtn" class="mode-button" style="background: #e6a800;">匯入YAML</button>
+            </div>
+        </header>
+        <div id="graph-container">
+            <canvas id="graphCanvas"></canvas>
+        </div>
+    </div>
+
+    <div id="overlay"></div>
+    <div id="edit-panel">
+        <div class="node-info" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 6px;">
+            <h3 style="margin: 0 0 10px 0; color: #333;">節點資訊</h3>
+            <div id="node-basic-info"></div>
+            <div id="node-connections"></div>
+        </div>
+        <div class="edit-field">
+            <label for="edit-id">節點ID：</label>
+            <input type="text" id="edit-id">
+        </div>
+        <div class="edit-field">
+            <label for="edit-text">文本：</label>
+            <textarea id="edit-text"></textarea>
+        </div>
+        <div class="edit-field">
+            <label>條件列表：</label>
+            <div id="conditions-list" class="list-container"></div>
+            <button id="edit-conditions" class="mode-button">編輯條件</button>
+        </div>
+        <div class="edit-field">
+            <label>事件列表：</label>
+            <div id="events-list" class="list-container"></div>
+            <button id="edit-events" class="mode-button">編輯事件</button>
+        </div>
+        <div class="edit-field">
+            <label for="edit-target">目標：</label>
+            <textarea id="edit-target"></textarea>
+        </div>
+        <div class="edit-buttons">
+            <button class="save-button" id="save-edit">保存</button>
+            <button class="cancel-button" id="cancel-edit">取消</button>
+        </div>
+    </div>
+
+    <div id="conditions-editor" class="list-edit-panel">
+        <h3>編輯條件列表</h3>
+        <div id="conditions-edit-list" class="list-container"></div>
+        <div class="list-controls">
+            <input type="text" id="new-condition" placeholder="輸入新條件">
+            <button id="add-condition" class="add-button">添加條件</button>
+        </div>
+        <div class="edit-buttons">
+            <button class="save-button" id="save-conditions">確定</button>
+            <button class="cancel-button" id="cancel-conditions">取消</button>
+        </div>
+    </div>
+
+    <div id="events-editor" class="list-edit-panel">
+        <h3>編輯事件列表</h3>
+        <div id="events-edit-list" class="list-container"></div>
+        <div class="list-controls">
+            <input type="text" id="new-event" placeholder="輸入新事件">
+            <button id="add-event" class="add-button">添加事件</button>
+        </div>
+        <div class="edit-buttons">
+            <button class="save-button" id="save-events">確定</button>
+            <button class="cancel-button" id="cancel-events">取消</button>
+        </div>
+    </div>
+
+    <div id="yaml-display-panel">
+        <h3>YAML 內容</h3>
+        <div id="yaml-content"></div>
+        <div class="edit-buttons">
+            <button class="copy-button" id="copy-yaml">複製</button>
+            <button class="cancel-button" id="close-yaml">關閉</button>
+        </div>
+    </div>
+
+    <div id="yaml-import-panel" class="yaml-panel">
+        <h3>導入 YAML</h3>
+        <textarea id="yaml-import-content" placeholder="請在此處貼上 YAML 內容..."></textarea>
+        <div class="edit-buttons">
+            <button class="save-button" id="import-yaml-confirm">導入</button>
+            <button class="cancel-button" id="import-yaml-cancel">取消</button>
+        </div>
+    </div>
+
+    <script>
+        class Node {
+            constructor(x, y, radius, label) {
+                this.x = x;
+                this.y = y;
+                this.radius = 40;
+                this.label = label;
+                this.color = '#4CAF50';
+                this.highlightColor = '#81C784';
+                this.isHighlighted = false;
+                this.text = '';
+                this.conditions = [];
+                this.events = [];
+                this.target = '';
+                this.isRed = false;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                if (this.isHighlighted) {
+                    ctx.fillStyle = this.isRed ? '#ff7070' : '#666666';
+                } else {
+                    ctx.fillStyle = this.isRed ? '#ff0000' : '#000000';
+                }
+                ctx.fill();
+                ctx.closePath();
+
+                // 繪製ID - 向上移動 8 個像素
+                ctx.font = 'bold 18px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const displayLabel = this.label.length > 5 ? this.label.substring(0, 5) + '...' : this.label;
+                ctx.fillText(displayLabel, this.x, this.y - 8);
+
+                // 如果有文本，顯示前10個字 - 相應調整位置
+                if (this.text) {
+                    ctx.font = '300 12px Arial';
+                    const previewText = this.text.substring(0, 10) + (this.text.length > 10 ? '...' : '');
+                    
+                    // 計算文本寬度
+                    const textWidth = ctx.measureText(previewText).width;
+                    const maxWidth = this.radius * 2; // 最大寬度為節點直徑
+                    
+                    if (textWidth > maxWidth) {
+                        // 需要換行的情況 - 位置相應上移
+                        const halfText = previewText.substring(0, Math.floor(previewText.length / 2));
+                        const remainingText = previewText.substring(Math.floor(previewText.length / 2));
+                        
+                        ctx.fillText(halfText, this.x, this.y + 8);  // 從 18 改為 8
+                        ctx.fillText(remainingText, this.x, this.y + 20);  // 從 30 改為 20
+                    } else {
+                        // 不需要換行 - 位置上移
+                        ctx.fillText(previewText, this.x, this.y + 12);  // 從 24 改為 12
+                    }
+                }
+            }
+
+            isPointInside(x, y) {
+                const dx = this.x - x;
+                const dy = this.y - y;
+                return Math.sqrt(dx * dx + dy * dy) <= this.radius;
+            }
+        }
+
+        class Edge {
+            constructor(startNode, endNode) {
+                this.startNode = startNode;
+                this.endNode = endNode;
+                this.color = '#2196F3';
+                this.highlightColor = '#64B5F6';
+                this.isHighlighted = false;
+            }
+
+            draw(ctx) {
+                const headLength = 15;
+                const angle = Math.atan2(
+                    this.endNode.y - this.startNode.y,
+                    this.endNode.x - this.startNode.x
+                );
+
+                const endX = this.endNode.x - (this.endNode.radius + 5) * Math.cos(angle);
+                const endY = this.endNode.y - (this.endNode.radius + 5) * Math.sin(angle);
+                
+                const startX = this.startNode.x + (this.startNode.radius + 5) * Math.cos(angle);
+                const startY = this.startNode.y + (this.startNode.radius + 5) * Math.sin(angle);
+
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = this.isHighlighted ? this.highlightColor : this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(
+                    endX - headLength * Math.cos(angle - Math.PI / 6),
+                    endY - headLength * Math.sin(angle - Math.PI / 6)
+                );
+                ctx.lineTo(
+                    endX - headLength * Math.cos(angle + Math.PI / 6),
+                    endY - headLength * Math.sin(angle + Math.PI / 6)
+                );
+                ctx.closePath();
+                ctx.fillStyle = this.isHighlighted ? this.highlightColor : this.color;
+                ctx.fill();
+            }
+
+            isPointNear(x, y, threshold = 5) {
+                const startX = this.startNode.x;
+                const startY = this.startNode.y;
+                const endX = this.endNode.x;
+                const endY = this.endNode.y;
+
+                const A = x - startX;
+                const B = y - startY;
+                const C = endX - startX;
+                const D = endY - startY;
+
+                const dot = A * C + B * D;
+                const len_sq = C * C + D * D;
+                let param = -1;
+
+                if (len_sq !== 0) {
+                    param = dot / len_sq;
+                }
+
+                let xx, yy;
+
+                if (param < 0) {
+                    xx = startX;
+                    yy = startY;
+                } else if (param > 1) {
+                    xx = endX;
+                    yy = endY;
+                } else {
+                    xx = startX + param * C;
+                    yy = startY + param * D;
+                }
+
+                const dx = x - xx;
+                const dy = y - yy;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                return distance <= threshold;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('graphCanvas');
+            const ctx = canvas.getContext('2d');
+            const nodes = [];
+            const edges = [];
+            let nextNodeLabel = 1;
+            let selectedNode = null;
+            let draggedNode = null;
+            let mode = 'addNode';
+            let startNode = null;
+
+            const editPanel = document.getElementById('edit-panel');
+            const overlay = document.getElementById('overlay');
+            const editText = document.getElementById('edit-text');
+            const editTarget = document.getElementById('edit-target');
+            const editId = document.getElementById('edit-id');
+            let currentEditingNode = null;
+
+            let tempConditions = [];
+            let tempEvents = [];
+
+            // 添加全局條件和事件集合
+            const globalConditions = new Set();
+            const globalEvents = new Set();
+
+            function showEditPanel(node) {
+                currentEditingNode = node;
+                
+                // 更新節點基本信息
+                const nodeInfoDiv = document.getElementById('node-basic-info');
+                nodeInfoDiv.innerHTML = `
+                    <p><strong>當前ID：</strong>${node.label}</p>
+                    <p><strong>節點顏色：</strong>${node.isRed ? '紅色' : '黑色'}</p>
+                `;
+
+                // 更新節點連接信息
+                const connectionsDiv = document.getElementById('node-connections');
+                const outgoingNodes = edges
+                    .filter(edge => edge.startNode === node)
+                    .map(edge => edge.endNode.label)
+                    .join(', ');
+                
+                connectionsDiv.innerHTML = `
+                    <p><strong>指向節點：</strong>${outgoingNodes || '無'}</p>
+                `;
+
+                // 設置編輯字段的值
+                editId.value = node.label || '';
+                editText.value = node.text || '';
+                editTarget.value = node.target || '';
+                
+                // 更新條件列表
+                updateConditionsList(node.conditions);
+                
+                // 更新事件列表
+                updateEventsList(node.events);
+                
+                editPanel.style.display = 'block';
+                overlay.style.display = 'block';
+            }
+
+            function hideEditPanel() {
+                editPanel.style.display = 'none';
+                overlay.style.display = 'none';
+                currentEditingNode = null;
+            }
+
+            function updateConditionsList(conditions) {
+                const container = document.getElementById('conditions-list');
+                container.innerHTML = conditions.map(condition => `
+                    <div class="list-item">
+                        <span>${condition}</span>
+                    </div>
+                `).join('');
+            }
+
+            function updateEventsList(events) {
+                const container = document.getElementById('events-list');
+                container.innerHTML = events.map(event => `
+                    <div class="list-item">
+                        <span>${event}</span>
+                    </div>
+                `).join('');
+            }
+
+            function showConditionsEditor() {
+                if (currentEditingNode) {
+                    tempConditions = [...currentEditingNode.conditions];
+                    updateConditionsEditList();
+                    document.getElementById('conditions-editor').style.display = 'block';
+                }
+            }
+
+            function showEventsEditor() {
+                if (currentEditingNode) {
+                    tempEvents = [...currentEditingNode.events];
+                    updateEventsEditList();
+                    document.getElementById('events-editor').style.display = 'block';
+                }
+            }
+
+            function updateConditionsEditList() {
+                const container = document.getElementById('conditions-edit-list');
+                container.innerHTML = tempConditions.map((condition, index) => `
+                    <div class="list-item">
+                        <span>${condition}</span>
+                        <button class="delete-condition" data-index="${index}">刪除</button>
+                    </div>
+                `).join('');
+            }
+
+            function updateEventsEditList() {
+                const container = document.getElementById('events-edit-list');
+                container.innerHTML = tempEvents.map((event, index) => `
+                    <div class="list-item">
+                        <span>${event}</span>
+                        <button class="delete-event" data-index="${index}">刪除</button>
+                    </div>
+                `).join('');
+            }
+
+            // 使用事件委託處理刪除操作
+            document.getElementById('conditions-edit-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-condition')) {
+                    const index = parseInt(e.target.dataset.index);
+                    tempConditions.splice(index, 1);
+                    updateConditionsEditList();
+                }
+            });
+
+            document.getElementById('events-edit-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-event')) {
+                    const index = parseInt(e.target.dataset.index);
+                    tempEvents.splice(index, 1);
+                    updateEventsEditList();
+                }
+            });
+
+            document.getElementById('save-edit').addEventListener('click', () => {
+                if (currentEditingNode) {
+                    const newId = editId.value.trim();
+                    
+                    // 檢查ID是否已存在
+                    const idExists = nodes.some(node => 
+                        node !== currentEditingNode && node.label === newId
+                    );
+                    
+                    if (idExists) {
+                        alert('此ID已被使用，請使用其他ID！');
+                        return;
+                    }
+                    
+                    // 更新節點ID和其他屬性
+                    currentEditingNode.label = newId;
+                    currentEditingNode.text = editText.value;
+                    currentEditingNode.target = editTarget.value;
+                    
+                    // 如果新ID是數字，更新nextNodeLabel
+                    const numId = parseInt(newId);
+                    if (!isNaN(numId)) {
+                        nextNodeLabel = Math.max(nextNodeLabel, numId + 1);
+                    }
+                    
+                    hideEditPanel();
+                    redraw();
+                }
+            });
+
+            document.getElementById('cancel-edit').addEventListener('click', hideEditPanel);
+
+            const addNodeButton = document.getElementById('addNodeMode');
+            const addEdgeButton = document.getElementById('addEdgeMode');
+            const editButton = document.getElementById('editMode');
+            const moveButton = document.getElementById('moveMode');
+            const deleteButton = document.getElementById('deleteMode');
+            const exportButton = document.getElementById('exportYaml');
+            const importYamlBtn = document.getElementById('importYamlBtn');
+            let isDragging = false;
+            let dragStartX = 0;
+            let dragStartY = 0;
+
+            function setMode(newMode) {
+                mode = newMode;
+                addNodeButton.classList.toggle('active', mode === 'addNode');
+                addEdgeButton.classList.toggle('active', mode === 'addEdge');
+                editButton.classList.toggle('active', mode === 'edit');
+                moveButton.classList.toggle('active', mode === 'move');
+                deleteButton.classList.toggle('active', mode === 'delete');
+                startNode = null;
+                selectedNode = null;
+                draggedNode = null;
+                redraw();
+
+                if (mode === 'edit') {
+                    canvas.style.cursor = 'pointer';
+                } else if (mode === 'move') {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+            }
+
+            addNodeButton.addEventListener('click', () => setMode('addNode'));
+            addEdgeButton.addEventListener('click', () => setMode('addEdge'));
+            editButton.addEventListener('click', () => setMode('edit'));
+            moveButton.addEventListener('click', () => setMode('move'));
+            deleteButton.addEventListener('click', () => setMode('delete'));
+
+            function resizeCanvas() {
+                const container = document.getElementById('graph-container');
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+            }
+
+            function redraw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                edges.forEach(edge => edge.draw(ctx));
+                
+                nodes.forEach(node => node.draw(ctx));
+            }
+
+            function getNodeAtPosition(x, y) {
+                return nodes.find(node => node.isPointInside(x, y));
+            }
+
+            function getEdgeAtPosition(x, y) {
+                return edges.find(edge => edge.isPointNear(x, y));
+            }
+
+            function updateNodeColors() {
+                // 首先將所有節點設為黑色
+                nodes.forEach(node => {
+                    node.isRed = false;
+                });
+
+                // 第一輪：檢查被黑色節點指向的節點，將它們設為紅色
+                edges.forEach(edge => {
+                    if (!edge.startNode.isRed) {
+                        edge.endNode.isRed = true;
+                    }
+                });
+
+                // 第二輪：檢查被紅色節點指向的節點，將它們設為黑色
+                edges.forEach(edge => {
+                    if (edge.startNode.isRed) {
+                        edge.endNode.isRed = false;
+                    }
+                });
+
+                redraw();
+            }
+
+            function generateYaml() {
+                let yaml = '';
+                
+                // 首先輸出全局條件
+                if (globalConditions.size > 0) {
+                    yaml += 'conditions:\n';
+                    Array.from(globalConditions).sort().forEach(condition => {
+                        yaml += `    ${condition}:\n`;
+                    });
+                    yaml += '\n';
+                }
+
+                // 然後輸出全局事件
+                if (globalEvents.size > 0) {
+                    yaml += 'events:\n';
+                    Array.from(globalEvents).sort().forEach(event => {
+                        yaml += `    ${event}:\n`;
+                    });
+                    yaml += '\n';
+                }
+                
+                // 找出沒有被指向的節點（first節點）
+                const targetedNodes = new Set(edges.map(edge => edge.endNode.label));
+                const firstNodes = nodes
+                    .filter(node => !targetedNodes.has(node.label))
+                    .map(node => node.label)
+                    .sort();
+                
+                // 添加first節點
+                if (firstNodes.length > 0) {
+                    yaml += `first: '${firstNodes.join(',')}'\n\n`;
+                }
+
+                // 分類NPC和玩家選項
+                const npcNodes = nodes.filter(node => !node.isRed);
+                const playerNodes = nodes.filter(node => node.isRed);
+
+                // 修改NPC選項的YAML生成
+                yaml += 'NPC_options:\n';
+                npcNodes.forEach(node => {
+                    yaml += `  '${node.label}':\n`;
+                    if (node.text) {
+                        yaml += `    text: |-\n`;
+                        // 處理多行文本，每行都要加縮排
+                        const lines = node.text.split('\n');
+                        lines.forEach(line => {
+                            yaml += `      ${line}\n`;
+                        });
+                    }
+                    if (node.conditions.length > 0) {
+                        yaml += `    conditions: '${node.conditions.join(',')}'\n`;
+                    }
+                    if (node.events.length > 0) {
+                        yaml += `    events: '${node.events.join(',')}'\n`;
+                    }
+                    
+                    // 處理指向的節點
+                    const pointers = edges
+                        .filter(edge => edge.startNode === node)
+                        .map(edge => edge.endNode.label);
+                    
+                    if (pointers.length > 0) {
+                        yaml += `    pointer: '${pointers.join(',')}'\n`;
+                    }
+                });
+
+                // 修改玩家選項的YAML生成
+                yaml += 'player_options:\n';
+                playerNodes.forEach(node => {
+                    yaml += `  '${node.label}':\n`;
+                    if (node.text) {
+                        yaml += `    text: |-\n`;
+                        // 處理多行文本，每行都要加縮排
+                        const lines = node.text.split('\n');
+                        lines.forEach(line => {
+                            yaml += `      ${line}\n`;
+                        });
+                    }
+                    if (node.conditions.length > 0) {
+                        yaml += `    conditions: '${node.conditions.join(',')}'\n`;
+                    }
+                    if (node.events.length > 0) {
+                        yaml += `    events: '${node.events.join(',')}'\n`;
+                    }
+                    
+                    // 處理指向的節點
+                    const pointers = edges
+                        .filter(edge => edge.startNode === node)
+                        .map(edge => edge.endNode.label);
+                    
+                    if (pointers.length > 0) {
+                        yaml += `    pointer: '${pointers.join(',')}'\n`;
+                    }
+                });
+
+                // 顯示 YAML 內容
+                const yamlContent = document.getElementById('yaml-content');
+                yamlContent.textContent = yaml;
+                document.getElementById('yaml-display-panel').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            }
+
+            function parseYamlContent(content) {
+                try {
+                    const lines = content.split('\n');
+                    const nodes = new Map();
+                    const connections = [];
+                    let currentNode = null;
+                    let currentSection = null;
+                    let isReadingText = false;
+                    let currentText = [];
+                    
+                    // 清空全局集合
+                    globalConditions.clear();
+                    globalEvents.clear();
+                    
+                    lines.forEach((line, index) => {
+                        const trimmedLine = line.trim();
+                        
+                        // 處理全局條件
+                        if (trimmedLine === 'conditions:') {
+                            currentSection = 'conditions';
+                            return;
+                        }
+                        // 處理全局事件
+                        else if (trimmedLine === 'events:') {
+                            currentSection = 'events';
+                            return;
+                        }
+                        // 收集全局條件
+                        else if (currentSection === 'conditions' && trimmedLine.endsWith(':')) {
+                            const condition = trimmedLine.slice(0, -1).trim();
+                            globalConditions.add(condition);
+                        }
+                        // 收集全局事件
+                        else if (currentSection === 'events' && trimmedLine.endsWith(':')) {
+                            const event = trimmedLine.slice(0, -1).trim();
+                            globalEvents.add(event);
+                        }
+                        // 處理 first 節點
+                        else if (trimmedLine.startsWith('first:')) {
+                            const firstValue = trimmedLine.split("'")[1];
+                            if (firstValue) {
+                                firstValue.split(',').forEach(nodeId => {
+                                    if (!nodes.has(nodeId)) {
+                                        nodes.set(nodeId, {
+                                            text: '',
+                                            conditions: [],
+                                            events: [],
+                                            pointers: []
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                        // 處理主要部分
+                        else if (trimmedLine === 'NPC_options:') {
+                            currentSection = 'NPC_options';
+                            isReadingText = false;
+                        }
+                        else if (trimmedLine === 'player_options:') {
+                            currentSection = 'player_options';
+                            isReadingText = false;
+                        }
+                        // 處理節點定義
+                        else if (trimmedLine.match(/^'[^']+':$/)) {
+                            currentNode = trimmedLine.split("'")[1];
+                            if (!nodes.has(currentNode)) {
+                                nodes.set(currentNode, {
+                                    text: '',
+                                    conditions: [],
+                                    events: [],
+                                    pointers: []
+                                });
+                            }
+                            isReadingText = false;
+                            currentText = [];
+                        }
+                        // 處理文本開始
+                        else if (trimmedLine === 'text: |-') {
+                            isReadingText = true;
+                            currentText = [];
+                        }
+                        // 處理條件
+                        else if (trimmedLine.startsWith('conditions:')) {
+                            if (isReadingText && currentText.length > 0) {
+                                nodes.get(currentNode).text = currentText.join('\n');
+                            }
+                            isReadingText = false;
+                            const conditionsStr = trimmedLine.split("'")[1];
+                            if (conditionsStr) {
+                                nodes.get(currentNode).conditions = conditionsStr.split(',');
+                            }
+                        }
+                        // 處理事件
+                        else if (trimmedLine.startsWith('events:')) {
+                            if (isReadingText && currentText.length > 0) {
+                                nodes.get(currentNode).text = currentText.join('\n');
+                            }
+                            isReadingText = false;
+                            const eventsStr = trimmedLine.split("'")[1];
+                            if (eventsStr) {
+                                nodes.get(currentNode).events = eventsStr.split(',');
+                            }
+                        }
+                        // 處理指針
+                        else if (trimmedLine.startsWith('pointer:')) {
+                            if (isReadingText && currentText.length > 0) {
+                                nodes.get(currentNode).text = currentText.join('\n');
+                            }
+                            isReadingText = false;
+                            const pointerStr = trimmedLine.split("'")[1];
+                            if (pointerStr) {
+                                const pointers = pointerStr.split(',');
+                                nodes.get(currentNode).pointers = pointers;
+                                pointers.forEach(pointer => {
+                                    connections.push([currentNode, pointer]);
+                                });
+                            }
+                        }
+                        // 處理多行文本內容
+                        else if (isReadingText && line.startsWith('      ')) {
+                            currentText.push(line.substring(6));
+                        }
+                        // 如果是最後一行或下一個節點開始，保存當前文本
+                        else if (isReadingText && 
+                                (index === lines.length - 1 || 
+                                 lines[index + 1].match(/^  '[^']+':$/))) {
+                            if (currentText.length > 0) {
+                                nodes.get(currentNode).text = currentText.join('\n');
+                            }
+                            isReadingText = false;
+                        }
+                    });
+
+                    return { nodes, connections };
+                } catch (error) {
+                    console.error('YAML解析錯誤:', error);
+                    return null;
+                }
+            }
+
+            function importYaml(content) {
+                const data = parseYamlContent(content);
+                if (!data) {
+                    alert('YAML格式錯誤！');
+                    return;
+                }
+
+                // 清空現有圖形
+                nodes.length = 0;
+                edges.length = 0;
+
+                // 創建所有節點，但暫時不設置位置
+                data.nodes.forEach((nodeData, nodeId) => {
+                    const node = new Node(0, 0, 40, nodeId);
+                    node.text = nodeData.text;
+                    node.conditions = nodeData.conditions;
+                    node.events = nodeData.events;
+                    nodes.push(node);
+                });
+
+                // 創建連接
+                data.connections.forEach(([fromId, toId]) => {
+                    const startNode = nodes.find(n => n.label === fromId);
+                    const endNode = nodes.find(n => n.label === toId);
+                    if (startNode && endNode) {
+                        edges.push(new Edge(startNode, endNode));
+                    }
+                });
+
+                // 找出根節點（沒有被指向的節點）
+                const targetedNodes = new Set(edges.map(edge => edge.endNode.label));
+                const rootNodes = nodes.filter(node => !targetedNodes.has(node.label));
+
+                // 計算每個節點的層級
+                const nodeLevels = new Map();
+                const calculateLevels = (node, level) => {
+                    if (nodeLevels.has(node)) {
+                        return;
+                    }
+                    nodeLevels.set(node, level);
+                    const children = edges
+                        .filter(edge => edge.startNode === node)
+                        .map(edge => edge.endNode);
+                    children.forEach(child => calculateLevels(child, level + 1));
+                };
+                rootNodes.forEach(node => calculateLevels(node, 0));
+
+                // 按層級分組節點
+                const levelGroups = new Map();
+                nodeLevels.forEach((level, node) => {
+                    if (!levelGroups.has(level)) {
+                        levelGroups.set(level, []);
+                    }
+                    levelGroups.get(level).push(node);
+                });
+
+                // 計算最大層級數和每層最大節點數
+                const maxLevel = Math.max(...nodeLevels.values());
+                const maxNodesInLevel = Math.max(...Array.from(levelGroups.values()).map(group => group.length));
+
+                // 設置布局參數
+                const levelSpacing = canvas.width / (maxLevel + 2); // 層級之間的間距
+                const nodeSpacing = canvas.height / (maxNodesInLevel + 1); // 同層節點之間的間距
+                const startX = levelSpacing; // 起始X座標
+
+                // 設置節點位置
+                levelGroups.forEach((nodesInLevel, level) => {
+                    const levelX = startX + level * levelSpacing;
+                    const totalHeight = (nodesInLevel.length - 1) * nodeSpacing;
+                    const startY = (canvas.height - totalHeight) / 2;
+
+                    nodesInLevel.forEach((node, index) => {
+                        node.x = levelX;
+                        node.y = startY + index * nodeSpacing;
+                    });
+                });
+
+                // 更新節點顏色
+                updateNodeColors();
+                redraw();
+
+                // 更新下一個節點的標籤
+                nextNodeLabel = Math.max(...Array.from(data.nodes.keys()).map(id => parseInt(id) || 0)) + 1;
+            }
+
+            // 修改導入按鈕的事件監聽器
+            document.getElementById('importYamlBtn').addEventListener('click', () => {
+                document.getElementById('yaml-import-panel').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('yaml-import-content').value = '';  // 清空文本區域
+            });
+
+            // 添加導入確認按鈕的事件監聽器
+            document.getElementById('import-yaml-confirm').addEventListener('click', () => {
+                const content = document.getElementById('yaml-import-content').value;
+                if (content.trim()) {
+                    importYaml(content);
+                    document.getElementById('yaml-import-panel').style.display = 'none';
+                    document.getElementById('overlay').style.display = 'none';
+                } else {
+                    alert('請先貼入 YAML 內容！');
+                }
+            });
+
+            // 添加導入取消按鈕的事件監聽器
+            document.getElementById('import-yaml-cancel').addEventListener('click', () => {
+                document.getElementById('yaml-import-panel').style.display = 'none';
+                document.getElementById('overlay').style.display = 'none';
+            });
+
+            exportButton.addEventListener('click', generateYaml);
+
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                if (mode === 'addNode') {
+                    const node = new Node(x, y, 40, nextNodeLabel.toString());
+                    nodes.push(node);
+                    nextNodeLabel++;
+                    updateNodeColors();
+                } else if (mode === 'addEdge') {
+                    const clickedNode = getNodeAtPosition(x, y);
+                    if (clickedNode) {
+                        if (!startNode) {
+                            startNode = clickedNode;
+                            startNode.isHighlighted = true;
+                        } else if (startNode !== clickedNode) {
+                            const edgeExists = edges.some(edge => 
+                                edge.startNode === startNode && edge.endNode === clickedNode
+                            );
+                            if (!edgeExists) {
+                                edges.push(new Edge(startNode, clickedNode));
+                                updateNodeColors();
+                            }
+                            startNode.isHighlighted = false;
+                            startNode = null;
+                        }
+                        redraw();
+                    }
+                } else if (mode === 'delete') {
+                    const clickedNode = getNodeAtPosition(x, y);
+                    if (clickedNode) {
+                        const nodeIndex = nodes.indexOf(clickedNode);
+                        if (nodeIndex > -1) {
+                            nodes.splice(nodeIndex, 1);
+                            for (let i = edges.length - 1; i >= 0; i--) {
+                                if (edges[i].startNode === clickedNode || edges[i].endNode === clickedNode) {
+                                    edges.splice(i, 1);
+                                }
+                            }
+                            updateNodeColors();
+                        }
+                    } else {
+                        const clickedEdge = getEdgeAtPosition(x, y);
+                        if (clickedEdge) {
+                            const edgeIndex = edges.indexOf(clickedEdge);
+                            if (edgeIndex > -1) {
+                                edges.splice(edgeIndex, 1);
+                                updateNodeColors();
+                            }
+                        }
+                    }
+                    redraw();
+                } else if (mode === 'edit') {
+                    const clickedNode = getNodeAtPosition(x, y);
+                    if (clickedNode) {
+                        showEditPanel(clickedNode);
+                    }
+                } else if (mode === 'move') {
+                    const clickedNode = getNodeAtPosition(x, y);
+                    if (clickedNode) {
+                        isDragging = true;
+                        draggedNode = clickedNode;
+                        dragStartX = x - clickedNode.x;
+                        dragStartY = y - clickedNode.y;
+                        canvas.style.cursor = 'grabbing';
+                    }
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                nodes.forEach(node => node.isHighlighted = false);
+                edges.forEach(edge => edge.isHighlighted = false);
+
+                if (mode === 'move') {
+                    if (isDragging && draggedNode) {
+                        draggedNode.x = x - dragStartX;
+                        draggedNode.y = y - dragStartY;
+                        redraw();
+                    } else {
+                        const hoveredNode = getNodeAtPosition(x, y);
+                        if (hoveredNode) {
+                            hoveredNode.isHighlighted = true;
+                            canvas.style.cursor = 'grab';
+                        } else {
+                            canvas.style.cursor = 'default';
+                        }
+                    }
+                } else if (mode === 'delete' || mode === 'edit') {
+                    const hoveredNode = getNodeAtPosition(x, y);
+                    const hoveredEdge = getEdgeAtPosition(x, y);
+                    if (hoveredNode) {
+                        hoveredNode.isHighlighted = true;
+                    } else if (hoveredEdge && mode === 'delete') {
+                        hoveredEdge.isHighlighted = true;
+                    }
+                } else if (mode === 'addEdge' && startNode) {
+                    const hoveredNode = getNodeAtPosition(x, y);
+                    if (hoveredNode && hoveredNode !== startNode) {
+                        hoveredNode.isHighlighted = true;
+                    }
+                    startNode.isHighlighted = true;
+                }
+
+                redraw();
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                if (mode === 'move') {
+                    isDragging = false;
+                    draggedNode = null;
+                    canvas.style.cursor = 'grab';
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                if (mode === 'move') {
+                    isDragging = false;
+                    draggedNode = null;
+                    canvas.style.cursor = 'grab';
+                }
+            });
+
+            // 使用事件監聽器綁定按鈕點擊事件
+            document.getElementById('edit-conditions').addEventListener('click', showConditionsEditor);
+            document.getElementById('edit-events').addEventListener('click', showEventsEditor);
+
+            // 添加條件按鈕事件監聽器
+            document.getElementById('add-condition').addEventListener('click', () => {
+                const input = document.getElementById('new-condition');
+                const condition = input.value.trim();
+                if (condition) {
+                    tempConditions.push(condition);
+                    updateConditionsEditList();
+                    input.value = '';
+                }
+            });
+
+            // 添加事件按鈕事件監聽器
+            document.getElementById('add-event').addEventListener('click', () => {
+                const input = document.getElementById('new-event');
+                const event = input.value.trim();
+                if (event) {
+                    tempEvents.push(event);
+                    updateEventsEditList();
+                    input.value = '';
+                }
+            });
+
+            // 修改保存條件的處理器
+            document.getElementById('save-conditions').addEventListener('click', () => {
+                if (currentEditingNode) {
+                    currentEditingNode.conditions = [...tempConditions];
+                    // 添加到全局條件集合
+                    tempConditions.forEach(condition => globalConditions.add(condition));
+                    updateConditionsList(currentEditingNode.conditions);
+                }
+                document.getElementById('conditions-editor').style.display = 'none';
+            });
+
+            // 修改保存事件的處理器
+            document.getElementById('save-events').addEventListener('click', () => {
+                if (currentEditingNode) {
+                    currentEditingNode.events = [...tempEvents];
+                    // 添加到全局事件集合
+                    tempEvents.forEach(event => globalEvents.add(event));
+                    updateEventsList(currentEditingNode.events);
+                }
+                document.getElementById('events-editor').style.display = 'none';
+            });
+
+            // 取消條件編輯按鈕事件監聽器
+            document.getElementById('cancel-conditions').addEventListener('click', () => {
+                document.getElementById('conditions-editor').style.display = 'none';
+            });
+
+            // 取消事件編輯按鈕事件監聽器
+            document.getElementById('cancel-events').addEventListener('click', () => {
+                document.getElementById('events-editor').style.display = 'none';
+            });
+
+            // 添加回車鍵提交功能
+            document.getElementById('new-condition').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('add-condition').click();
+                }
+            });
+
+            document.getElementById('new-event').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('add-event').click();
+                }
+            });
+
+            // 修改複製按鈕的事件監聽器
+            document.getElementById('copy-yaml').addEventListener('click', () => {
+                const yamlContent = document.getElementById('yaml-content');
+                navigator.clipboard.writeText(yamlContent.textContent)
+                    .catch(err => console.error('複製失敗：', err));
+            });
+
+            document.getElementById('close-yaml').addEventListener('click', () => {
+                document.getElementById('yaml-display-panel').style.display = 'none';
+                document.getElementById('overlay').style.display = 'none';
+            });
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        });
+    </script>
+</body>
+</html> 
