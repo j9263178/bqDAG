@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BetonQuest DAG nice1104</title>
+    <title>BetonQuest DAG</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -408,17 +408,17 @@
 <body>
     <div class="container">
         <header>
-            <h1 style="font-size: 24px; margin: 5px 0;">BetonQuest DAG nice1104</h1>
-            <p style="margin: 5px 0;">點擊畫布來添加, 拖曳節點和創建連接！點擊節點可編輯。注意黑色節點規範為npc_options，紅色節點為player_options。</p>
+            <h1 style="font-size: 24px; margin: 5px 0;">BetonQuest DAG</h1>
+            <p style="margin: 5px 0;">Click canvas to add, drag nodes and create connections! Click nodes in edit mode to edit. Note: black nodes are npc_options, red nodes are player_options.</p>
             <div class="controls">
-                <button id="addNodeMode" class="mode-button active">添加節點模式</button>
-                <button id="addEdgeMode" class="mode-button">添加連接模式</button>
-                <button id="editMode" class="mode-button">編輯模式</button>
-                <button id="moveMode" class="mode-button">移動模式</button>
-                <button id="deleteMode" class="mode-button">刪除模式</button>
-                <button id="exportYaml" class="mode-button" style="background: #007bff;">導出YAML</button>
-                <button id="importYamlBtn" class="mode-button" style="background: #e6a800;">匯入YAML</button>
-                <button id="conditionManagerBtn" class="mode-button" style="background: #9c27b0;">條件管理</button>
+                <button id="addNodeMode" class="mode-button active">Add Node</button>
+                <button id="addEdgeMode" class="mode-button">Add Connection</button>
+                <button id="editMode" class="mode-button">Edit Mode</button>
+                <button id="moveMode" class="mode-button">Move Mode</button>
+                <button id="deleteMode" class="mode-button">Delete Mode</button>
+                <button id="exportYaml" class="mode-button" style="background: #007bff;">Export YAML</button>
+                <button id="importYamlBtn" class="mode-button" style="background: #e6a800;">Import YAML</button>
+                <button id="conditionManagerBtn" class="mode-button" style="background: #9c27b0;">Condition Manager</button>
             </div>
         </header>
         <div id="graph-container">
@@ -429,102 +429,102 @@
     <div id="overlay"></div>
     <div id="edit-panel">
         <div class="node-info" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 6px;">
-            <h3 style="margin: 0 0 10px 0; color: #333;">節點資訊</h3>
+            <h3 style="margin: 0 0 10px 0; color: #333;">Node Information</h3>
             <div id="node-basic-info"></div>
             <div id="node-connections"></div>
         </div>
         <div class="edit-field">
-            <label for="edit-id">節點ID：</label>
+            <label for="edit-id">Node ID:</label>
             <input type="text" id="edit-id">
         </div>
         <div class="edit-field">
-            <label for="edit-text">文本：</label>
+            <label for="edit-text">Text:</label>
             <textarea id="edit-text"></textarea>
         </div>
         <div class="edit-field">
-            <label>條件列表：</label>
+            <label>Conditions List:</label>
             <div id="conditions-list" class="list-container"></div>
-            <button id="edit-conditions" class="mode-button">編輯條件</button>
+            <button id="edit-conditions" class="mode-button">Edit Conditions</button>
         </div>
         <div class="edit-field">
-            <label>事件列表：</label>
+            <label>Events List:</label>
             <div id="events-list" class="list-container"></div>
-            <button id="edit-events" class="mode-button">編輯事件</button>
+            <button id="edit-events" class="mode-button">Edit Events</button>
         </div>
         <div class="edit-field">
-            <label>目標列表：</label>
+            <label>Objectives List:</label>
             <div id="objectives-list" class="list-container"></div>
-            <button id="edit-objectives" class="mode-button">編輯目標</button>
+            <button id="edit-objectives" class="mode-button">Edit Objectives</button>
         </div>
         <div class="edit-buttons">
-            <button class="save-button" id="save-edit">保存</button>
-            <button class="cancel-button" id="cancel-edit">取消</button>
+            <button class="save-button" id="save-edit">Save</button>
+            <button class="cancel-button" id="cancel-edit">Cancel</button>
         </div>
     </div>
 
     <div id="conditions-editor" class="list-edit-panel">
-        <h3>編輯條件列表</h3>
+        <h3>Edit Conditions List</h3>
         <div id="conditions-edit-list" class="list-container"></div>
         <div class="list-controls">
-            <input type="text" id="new-condition" placeholder="輸入新條件">
-            <button id="add-condition" class="add-button">添加條件</button>
+            <input type="text" id="new-condition" placeholder="Enter new condition">
+            <button id="add-condition" class="add-button">Add Condition</button>
         </div>
         <div class="edit-buttons">
-            <button class="save-button" id="save-conditions">確定</button>
-            <button class="cancel-button" id="cancel-conditions">取消</button>
+            <button class="save-button" id="save-conditions">Confirm</button>
+            <button class="cancel-button" id="cancel-conditions">Cancel</button>
         </div>
     </div>
 
     <div id="events-editor" class="list-edit-panel">
-        <h3>編輯事件列表</h3>
+        <h3>Edit Events List</h3>
         <div id="events-edit-list" class="list-container"></div>
         <div class="list-controls">
-            <input type="text" id="new-event" placeholder="輸入新事件">
-            <button id="add-event" class="add-button">添加事件</button>
+            <input type="text" id="new-event" placeholder="Enter new event">
+            <button id="add-event" class="add-button">Add Event</button>
         </div>
         <div class="edit-buttons">
-            <button class="save-button" id="save-events">確定</button>
-            <button class="cancel-button" id="cancel-events">取消</button>
+            <button class="save-button" id="save-events">Confirm</button>
+            <button class="cancel-button" id="cancel-events">Cancel</button>
         </div>
     </div>
 
     <div id="objectives-editor" class="list-edit-panel">
-        <h3>編輯目標列表</h3>
+        <h3>Edit Objectives List</h3>
         <div id="objectives-edit-list" class="list-container"></div>
         <div class="list-controls">
-            <input type="text" id="new-objective" placeholder="輸入新目標">
-            <button id="add-objective" class="add-button">添加目標</button>
+            <input type="text" id="new-objective" placeholder="Enter new objective">
+            <button id="add-objective" class="add-button">Add Objective</button>
         </div>
         <div class="edit-buttons">
-            <button class="save-button" id="save-objectives">確定</button>
-            <button class="cancel-button" id="cancel-objectives">取消</button>
+            <button class="save-button" id="save-objectives">Confirm</button>
+            <button class="cancel-button" id="cancel-objectives">Cancel</button>
         </div>
     </div>
 
     <div id="yaml-display-panel">
-        <h3>YAML 內容</h3>
+        <h3>YAML Content</h3>
         <div id="yaml-content"></div>
         <div class="edit-buttons">
-            <button class="copy-button" id="copy-yaml">複製</button>
-            <button class="cancel-button" id="close-yaml">關閉</button>
+            <button class="copy-button" id="copy-yaml">Copy</button>
+            <button class="cancel-button" id="close-yaml">Close</button>
         </div>
     </div>
 
     <div id="yaml-import-panel" class="yaml-panel">
-        <h3>導入 YAML</h3>
-        <textarea id="yaml-import-content" placeholder="請在此處貼上 YAML 內容..."></textarea>
+        <h3>Import YAML</h3>
+        <textarea id="yaml-import-content" placeholder="Paste YAML content here..."></textarea>
         <div class="edit-buttons">
-            <button class="save-button" id="import-yaml-confirm">導入</button>
-            <button class="cancel-button" id="import-yaml-cancel">取消</button>
+            <button class="save-button" id="import-yaml-confirm">Import</button>
+            <button class="cancel-button" id="import-yaml-cancel">Cancel</button>
         </div>
     </div>
 
     <div id="condition-manager-panel" class="yaml-panel">
-        <h3>條件管理</h3>
+        <h3>Condition Manager</h3>
         <div id="condition-list" class="list-container" style="text-align: left; max-height: 400px;">
         </div>
         <div class="edit-buttons">
-            <button class="cancel-button" id="close-condition-manager">關閉</button>
+            <button class="cancel-button" id="close-condition-manager">Close</button>
         </div>
     </div>
 
@@ -603,9 +603,9 @@
                 
                 // 獲取最長的文本寬度
                 const maxWidth = Math.max(
-                    ctx.measureText('條件:').width,
-                    ctx.measureText('事件:').width,
-                    ctx.measureText('目標:').width,
+                    ctx.measureText('Conditions:').width,
+                    ctx.measureText('Events:').width,
+                    ctx.measureText('Objectives:').width,
                     ...this.conditions.map(c => ctx.measureText(c).width),
                     ...this.events.map(e => ctx.measureText(e).width),
                     ...this.objectives.map(o => ctx.measureText(o).width)
@@ -642,7 +642,7 @@
                 
                 // 繪製條件
                 if (this.conditions.length > 0) {
-                    ctx.fillText('條件:', boxX + padding, currentY);
+                    ctx.fillText('Conditions:', boxX + padding, currentY);
                     currentY += lineHeight;
                     this.conditions.forEach(condition => {
                         ctx.fillText(condition, boxX + padding * 2, currentY);
@@ -652,7 +652,7 @@
                 
                 // 繪製事件
                 if (this.events.length > 0) {
-                    ctx.fillText('事件:', boxX + padding, currentY);
+                    ctx.fillText('Events:', boxX + padding, currentY);
                     currentY += lineHeight;
                     this.events.forEach(event => {
                         ctx.fillText(event, boxX + padding * 2, currentY);
@@ -662,7 +662,7 @@
                 
                 // 繪製目標
                 if (this.objectives.length > 0) {
-                    ctx.fillText('目標:', boxX + padding, currentY);
+                    ctx.fillText('Objectives:', boxX + padding, currentY);
                     currentY += lineHeight;
                     this.objectives.forEach(objective => {
                         ctx.fillText(objective, boxX + padding * 2, currentY);
@@ -798,9 +798,9 @@
                 // 更新節點基本信息
                 const nodeInfoDiv = document.getElementById('node-basic-info');
                 nodeInfoDiv.innerHTML = `
-                    <p><strong>當前ID：</strong>${node.label}</p>
-                    <p><strong>節點顏色：</strong>${node.isRed ? '紅色' : '黑色'}</p>
-                    <p><strong>順序編號：</strong>${node.orderNumber > 0 ? '#' + node.orderNumber : '無'}</p>
+                    <p><strong>Current ID:</strong>${node.label}</p>
+                    <p><strong>Node Color:</strong>${node.isRed ? 'Red' : 'Black'}</p>
+                    <p><strong>Order Number:</strong>${node.orderNumber > 0 ? '#' + node.orderNumber : 'None'}</p>
                 `;
 
                 // 更新節點連接信息
@@ -811,7 +811,7 @@
                     .join(', ');
                 
                 connectionsDiv.innerHTML = `
-                    <p><strong>指向節點：</strong>${outgoingNodes || '無'}</p>
+                    <p><strong>Points to:</strong>${outgoingNodes || 'None'}</p>
                 `;
 
                 // 設置編輯字段的值
@@ -953,7 +953,7 @@
                     );
                     
                     if (idExists) {
-                        alert('此ID已被使用，請使用其他ID！');
+                        alert('This ID is already in use, please use a different ID!');
                         return;
                     }
                     
@@ -1634,7 +1634,7 @@
                     document.getElementById('yaml-import-panel').style.display = 'none';
                     document.getElementById('overlay').style.display = 'none';
                 } else {
-                    alert('請先貼入 YAML 內容！');
+                    alert('Please paste YAML content first!');
                 }
             });
 
@@ -1888,7 +1888,7 @@
             document.getElementById('copy-yaml').addEventListener('click', () => {
                 const yamlContent = document.getElementById('yaml-content');
                 navigator.clipboard.writeText(yamlContent.textContent)
-                    .catch(err => console.error('複製失敗：', err));
+                    .catch(err => console.error('Copy failed:', err));
             });
 
             document.getElementById('close-yaml').addEventListener('click', () => {
