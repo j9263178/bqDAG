@@ -452,8 +452,9 @@
             <button id="edit-events" class="mode-button">編輯事件</button>
         </div>
         <div class="edit-field">
-            <label for="edit-target">目標：</label>
-            <textarea id="edit-target"></textarea>
+            <label>目標列表：</label>
+            <div id="objectives-list" class="list-container"></div>
+            <button id="edit-objectives" class="mode-button">編輯目標</button>
         </div>
         <div class="edit-buttons">
             <button class="save-button" id="save-edit">保存</button>
@@ -484,6 +485,19 @@
         <div class="edit-buttons">
             <button class="save-button" id="save-events">確定</button>
             <button class="cancel-button" id="cancel-events">取消</button>
+        </div>
+    </div>
+
+    <div id="objectives-editor" class="list-edit-panel">
+        <h3>編輯目標列表</h3>
+        <div id="objectives-edit-list" class="list-container"></div>
+        <div class="list-controls">
+            <input type="text" id="new-objective" placeholder="輸入新目標">
+            <button id="add-objective" class="add-button">添加目標</button>
+        </div>
+        <div class="edit-buttons">
+            <button class="save-button" id="save-objectives">確定</button>
+            <button class="cancel-button" id="cancel-objectives">取消</button>
         </div>
     </div>
 
@@ -527,7 +541,7 @@
                 this.text = '';
                 this.conditions = [];
                 this.events = [];
-                this.target = '';
+                this.objectives = [];
                 this.isRed = false;
                 this.isReachable = true;
                 this.orderNumber = 0;
@@ -556,26 +570,104 @@
                 const displayLabel = this.label.length > 5 ? this.label.substring(0, 5) + '...' : this.label;
                 ctx.fillText(displayLabel, this.x, this.y - 8);
 
-                // 如果有文本，顯示前10個字 - 相應調整位置
+                // 如果有文本，顯示前10個字
                 if (this.text) {
                     ctx.font = '300 12px Arial';
                     const previewText = this.text.substring(0, 10) + (this.text.length > 10 ? '...' : '');
                     
-                    // 計算文本寬度
                     const textWidth = ctx.measureText(previewText).width;
-                    const maxWidth = this.radius * 2; // 最大寬度為節點直徑
+                    const maxWidth = this.radius * 2;
                     
                     if (textWidth > maxWidth) {
-                        // 需要換行的情況 - 位置相應上移
                         const halfText = previewText.substring(0, Math.floor(previewText.length / 2));
                         const remainingText = previewText.substring(Math.floor(previewText.length / 2));
-                        
-                        ctx.fillText(halfText, this.x, this.y + 8);  // 從 18 改為 8
-                        ctx.fillText(remainingText, this.x, this.y + 20);  // 從 30 改為 20
+                        ctx.fillText(halfText, this.x, this.y + 8);
+                        ctx.fillText(remainingText, this.x, this.y + 20);
                     } else {
-                        // 不需要換行 - 位置上移
-                        ctx.fillText(previewText, this.x, this.y + 12);  // 從 24 改為 12
+                        ctx.fillText(previewText, this.x, this.y + 12);
                     }
+                }
+            }
+
+            drawHoverInfo(ctx) {
+                // 如果沒有任何事件、目標和條件，就不顯示信息框
+                if (this.conditions.length === 0 && this.events.length === 0 && this.objectives.length === 0) {
+                    return;
+                }
+
+                const padding = 10;
+                const lineHeight = 20;
+                
+                // 計算所需的文本寬度和高度
+                ctx.font = '14px Arial';
+                
+                // 獲取最長的文本寬度
+                const maxWidth = Math.max(
+                    ctx.measureText('條件:').width,
+                    ctx.measureText('事件:').width,
+                    ctx.measureText('目標:').width,
+                    ...this.conditions.map(c => ctx.measureText(c).width),
+                    ...this.events.map(e => ctx.measureText(e).width),
+                    ...this.objectives.map(o => ctx.measureText(o).width)
+                );
+                
+                // 計算信息框的尺寸
+                const boxWidth = maxWidth + padding * 3;
+                const totalItems = this.conditions.length + this.events.length + this.objectives.length;
+                const boxHeight = (totalItems + 3) * lineHeight + padding * 2; // +3 是為了標題行
+                
+                // 計算信息框的位置（在節點右上方）
+                let boxX = this.x + this.radius + padding;
+                let boxY = this.y - boxHeight - padding;
+                
+                // 確保信息框不會超出畫布邊界
+                if (boxX + boxWidth > ctx.canvas.width) {
+                    boxX = this.x - boxWidth - this.radius - padding;
+                }
+                if (boxY < 0) {
+                    boxY = this.y + this.radius + padding;
+                }
+                
+                // 繪製半透明背景
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+                
+                // 繪製文本
+                ctx.font = '14px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                
+                let currentY = boxY + padding;
+                
+                // 繪製條件
+                if (this.conditions.length > 0) {
+                    ctx.fillText('條件:', boxX + padding, currentY);
+                    currentY += lineHeight;
+                    this.conditions.forEach(condition => {
+                        ctx.fillText(condition, boxX + padding * 2, currentY);
+                        currentY += lineHeight;
+                    });
+                }
+                
+                // 繪製事件
+                if (this.events.length > 0) {
+                    ctx.fillText('事件:', boxX + padding, currentY);
+                    currentY += lineHeight;
+                    this.events.forEach(event => {
+                        ctx.fillText(event, boxX + padding * 2, currentY);
+                        currentY += lineHeight;
+                    });
+                }
+                
+                // 繪製目標
+                if (this.objectives.length > 0) {
+                    ctx.fillText('目標:', boxX + padding, currentY);
+                    currentY += lineHeight;
+                    this.objectives.forEach(objective => {
+                        ctx.fillText(objective, boxX + padding * 2, currentY);
+                        currentY += lineHeight;
+                    });
                 }
             }
 
@@ -690,10 +782,12 @@
 
             let tempConditions = [];
             let tempEvents = [];
+            let tempObjectives = [];
 
             // 添加全局條件和事件集合
             const globalConditions = new Set();
             const globalEvents = new Set();
+            const globalObjectives = new Set();
             
             // 添加條件狀態管理
             const conditionStates = new Map();
@@ -723,13 +817,15 @@
                 // 設置編輯字段的值
                 editId.value = node.label || '';
                 editText.value = node.text || '';
-                editTarget.value = node.target || '';
                 
                 // 更新條件列表
                 updateConditionsList(node.conditions);
                 
                 // 更新事件列表
                 updateEventsList(node.events);
+
+                // 更新目標列表
+                updateObjectivesList(node.objectives);
                 
                 editPanel.style.display = 'block';
                 overlay.style.display = 'block';
@@ -759,6 +855,15 @@
                 `).join('');
             }
 
+            function updateObjectivesList(objectives) {
+                const container = document.getElementById('objectives-list');
+                container.innerHTML = objectives.map(objective => `
+                    <div class="list-item">
+                        <span>${objective}</span>
+                    </div>
+                `).join('');
+            }
+
             function showConditionsEditor() {
                 if (currentEditingNode) {
                     tempConditions = [...currentEditingNode.conditions];
@@ -772,6 +877,14 @@
                     tempEvents = [...currentEditingNode.events];
                     updateEventsEditList();
                     document.getElementById('events-editor').style.display = 'block';
+                }
+            }
+
+            function showObjectivesEditor() {
+                if (currentEditingNode) {
+                    tempObjectives = [...currentEditingNode.objectives];
+                    updateObjectivesEditList();
+                    document.getElementById('objectives-editor').style.display = 'block';
                 }
             }
 
@@ -795,6 +908,16 @@
                 `).join('');
             }
 
+            function updateObjectivesEditList() {
+                const container = document.getElementById('objectives-edit-list');
+                container.innerHTML = tempObjectives.map((objective, index) => `
+                    <div class="list-item">
+                        <span>${objective}</span>
+                        <button class="delete-objective" data-index="${index}">刪除</button>
+                    </div>
+                `).join('');
+            }
+
             // 使用事件委託處理刪除操作
             document.getElementById('conditions-edit-list').addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-condition')) {
@@ -809,6 +932,14 @@
                     const index = parseInt(e.target.dataset.index);
                     tempEvents.splice(index, 1);
                     updateEventsEditList();
+                }
+            });
+
+            document.getElementById('objectives-edit-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-objective')) {
+                    const index = parseInt(e.target.dataset.index);
+                    tempObjectives.splice(index, 1);
+                    updateObjectivesEditList();
                 }
             });
 
@@ -829,7 +960,6 @@
                     // 更新節點ID和其他屬性
                     currentEditingNode.label = newId;
                     currentEditingNode.text = editText.value;
-                    currentEditingNode.target = editTarget.value;
                     
                     // 如果新ID是數字，更新nextNodeLabel
                     const numId = parseInt(newId);
@@ -893,8 +1023,19 @@
             function redraw() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 updateNodeReachability(); // 在重繪之前更新節點可達性
+                
+                // 先繪製所有邊
                 edges.forEach(edge => edge.draw(ctx));
+                
+                // 然後繪製所有節點
                 nodes.forEach(node => node.draw(ctx));
+                
+                // 最後繪製懸停信息框
+                nodes.forEach(node => {
+                    if (node.isHighlighted) {
+                        node.drawHoverInfo(ctx);
+                    }
+                });
             }
 
             function getNodeAtPosition(x, y) {
@@ -931,9 +1072,10 @@
             function generateYaml() {
                 let yaml = '';
                 
-                // 收集所有節點中使用的條件和事件
+                // 收集所有節點中使用的條件、事件和目標
                 const allConditions = new Set();
                 const allEvents = new Set();
+                const allObjectives = new Set();
                 
                 nodes.forEach(node => {
                     // 收集條件
@@ -946,6 +1088,12 @@
                     node.events.forEach(event => {
                         allEvents.add(event);
                         globalEvents.add(event);
+                    });
+
+                    // 收集目標
+                    node.objectives.forEach(objective => {
+                        allObjectives.add(objective);
+                        globalObjectives.add(objective);
                     });
                 });
                 
@@ -963,6 +1111,15 @@
                     yaml += 'events:\n';
                     Array.from(allEvents).sort().forEach(event => {
                         yaml += `    ${event}:\n`;
+                    });
+                    yaml += '\n';
+                }
+
+                // 輸出全局目標
+                if (allObjectives.size > 0) {
+                    yaml += 'objectives:\n';
+                    Array.from(allObjectives).sort().forEach(objective => {
+                        yaml += `    ${objective}:\n`;
                     });
                     yaml += '\n';
                 }
@@ -1006,6 +1163,9 @@
                     if (node.events.length > 0) {
                         yaml += `    events: '${node.events.join(',')}'\n`;
                     }
+                    if (node.objectives.length > 0) {
+                        yaml += `    objectives: '${node.objectives.join(',')}'\n`;
+                    }
                     
                     // 處理指向的節點
                     const pointers = edges
@@ -1040,6 +1200,9 @@
                     if (node.events.length > 0) {
                         yaml += `    events: '${node.events.join(',')}'\n`;
                     }
+                    if (node.objectives.length > 0) {
+                        yaml += `    objectives: '${node.objectives.join(',')}'\n`;
+                    }
                     
                     // 處理指向的節點
                     const pointers = edges
@@ -1071,6 +1234,7 @@
                     // 清空全局集合和條件狀態
                     globalConditions.clear();
                     globalEvents.clear();
+                    globalObjectives.clear();
                     conditionStates.clear();
                     
                     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
@@ -1098,6 +1262,16 @@
                                 currentSection = 'events';
                                 continue;
                             }
+                            // 處理全局目標
+                            else if (trimmedLine === 'objectives:') {
+                                if (isReadingText && currentText.length > 0 && currentNode) {
+                                    nodes.get(currentNode).text = currentText.join('\n');
+                                    isReadingText = false;
+                                    currentText = [];
+                                }
+                                currentSection = 'objectives';
+                                continue;
+                            }
                             // 收集全局條件
                             else if (currentSection === 'conditions' && trimmedLine.endsWith(':')) {
                                 const condition = trimmedLine.slice(0, -1).trim();
@@ -1114,6 +1288,14 @@
                                 }
                                 globalEvents.add(event);
                             }
+                            // 收集全局目標
+                            else if (currentSection === 'objectives' && trimmedLine.endsWith(':')) {
+                                const objective = trimmedLine.slice(0, -1).trim();
+                                if (!objective) {
+                                    throw new Error('目標名稱不能為空');
+                                }
+                                globalObjectives.add(objective);
+                            }
                             // 處理 first 節點
                             else if (trimmedLine.startsWith('first:')) {
                                 if (isReadingText && currentText.length > 0 && currentNode) {
@@ -1121,9 +1303,10 @@
                                     isReadingText = false;
                                     currentText = [];
                                 }
-                                const match = trimmedLine.match(/first:\s*'([^']*)'$/);
+                                // 支持帶引號和不帶引號的格式
+                                const match = trimmedLine.match(/first:\s*'?([^']*)'?$/);
                                 if (!match) {
-                                    throw new Error('first 節點格式錯誤，應為：first: \'節點ID\'');
+                                    throw new Error('first 節點格式錯誤');
                                 }
                                 const firstValue = match[1];
                                 if (firstValue) {
@@ -1191,18 +1374,21 @@
                                 if (!currentNode) {
                                     throw new Error('text 必須在節點定義內');
                                 }
-                                // 檢查是否是單行文本格式 'text: \'內容\''
-                                const singleLineMatch = trimmedLine.match(/^text:\s*'([^']*)'$/);
-                                if (singleLineMatch) {
-                                    nodes.get(currentNode).text = singleLineMatch[1];
-                                    isReadingText = false;
-                                    currentText = [];
-                                } else if (trimmedLine === 'text: |-') {
+                                // 檢查是否是單行文本格式
+                                if (trimmedLine === 'text: |-') {
                                     // 多行文本格式
                                     isReadingText = true;
                                     currentText = [];
                                 } else {
-                                    throw new Error('text 格式錯誤，應為：text: \'內容\' 或 text: |-');
+                                    // 單行文本格式，支持帶引號和不帶引號
+                                    const singleLineMatch = trimmedLine.match(/^text:\s*'?([^']*)'?$/);
+                                    if (singleLineMatch) {
+                                        nodes.get(currentNode).text = singleLineMatch[1];
+                                        isReadingText = false;
+                                        currentText = [];
+                                    } else {
+                                        throw new Error('text 格式錯誤，應為：text: \'內容\' 或 text: |-');
+                                    }
                                 }
                             }
                             // 處理條件
@@ -1215,9 +1401,10 @@
                                 if (!currentNode) {
                                     throw new Error('conditions 必須在節點定義內');
                                 }
-                                const match = trimmedLine.match(/conditions:\s*'([^']*)'$/);
+                                // 支持帶引號和不帶引號的格式
+                                const match = trimmedLine.match(/conditions:\s*'?([^']*)'?$/);
                                 if (!match) {
-                                    throw new Error('conditions 格式錯誤，應為：conditions: \'條件1,條件2\'');
+                                    throw new Error('conditions 格式錯誤');
                                 }
                                 const conditionsStr = match[1];
                                 if (conditionsStr) {
@@ -1234,13 +1421,34 @@
                                 if (!currentNode) {
                                     throw new Error('events 必須在節點定義內');
                                 }
-                                const match = trimmedLine.match(/events:\s*'([^']*)'$/);
+                                // 支持帶引號和不帶引號的格式
+                                const match = trimmedLine.match(/events:\s*'?([^']*)'?$/);
                                 if (!match) {
-                                    throw new Error('events 格式錯誤，應為：events: \'事件1,事件2\'');
+                                    throw new Error('events 格式錯誤');
                                 }
                                 const eventsStr = match[1];
                                 if (eventsStr) {
                                     nodes.get(currentNode).events = eventsStr.split(',');
+                                }
+                            }
+                            // 處理目標
+                            else if (trimmedLine.startsWith('objectives:')) {
+                                if (isReadingText && currentText.length > 0 && currentNode) {
+                                    nodes.get(currentNode).text = currentText.join('\n');
+                                    isReadingText = false;
+                                    currentText = [];
+                                }
+                                if (!currentNode) {
+                                    throw new Error('objectives 必須在節點定義內');
+                                }
+                                // 支持帶引號和不帶引號的格式
+                                const match = trimmedLine.match(/objectives:\s*'?([^']*)'?$/);
+                                if (!match) {
+                                    throw new Error('objectives 格式錯誤');
+                                }
+                                const objectivesStr = match[1];
+                                if (objectivesStr) {
+                                    nodes.get(currentNode).objectives = objectivesStr.split(',');
                                 }
                             }
                             // 處理指針
@@ -1253,9 +1461,10 @@
                                 if (!currentNode) {
                                     throw new Error('pointer 必須在節點定義內');
                                 }
-                                const match = trimmedLine.match(/pointer:\s*'([^']*)'$/);
+                                // 支持帶引號和不帶引號的格式
+                                const match = trimmedLine.match(/pointer:\s*'?([^']*)'?$/);
                                 if (!match) {
-                                    throw new Error('pointer 格式錯誤，應為：pointer: \'節點1,節點2\'');
+                                    throw new Error('pointer 格式錯誤');
                                 }
                                 const pointerStr = match[1];
                                 if (pointerStr) {
@@ -1386,7 +1595,25 @@
 
                 // 更新節點顏色
                 updateNodeColors();
+
+                // 初始化所有條件的狀態為 false
+                nodes.forEach(node => {
+                    node.conditions.forEach(condition => {
+                        // 如果是否定條件，獲取原始條件名稱
+                        const actualCondition = condition.startsWith('!') ? condition.substring(1) : condition;
+                        // 將條件添加到全局條件集合
+                        globalConditions.add(actualCondition);
+                        // 設置條件狀態為 false
+                        conditionStates.set(actualCondition, false);
+                    });
+                });
+
+                // 更新節點可達性
+                updateNodeReachability();
                 redraw();
+
+                // 更新條件管理面板
+                updateConditionManagerPanel();
 
                 // 更新下一個節點的標籤
                 nextNodeLabel = Math.max(...Array.from(data.nodes.keys()).map(id => parseInt(id) || 0)) + 1;
@@ -1549,16 +1776,22 @@
             // 使用事件監聽器綁定按鈕點擊事件
             document.getElementById('edit-conditions').addEventListener('click', showConditionsEditor);
             document.getElementById('edit-events').addEventListener('click', showEventsEditor);
+            document.getElementById('edit-objectives').addEventListener('click', showObjectivesEditor);
 
             // 添加條件按鈕事件監聽器
             document.getElementById('add-condition').addEventListener('click', () => {
                 const input = document.getElementById('new-condition');
                 const condition = input.value.trim();
                 if (condition) {
-                    tempConditions.push(condition);
-                    globalConditions.add(condition);
-                    if (!conditionStates.has(condition)) {
-                        conditionStates.set(condition, false); // 默認設置為 false
+                    // 直接添加條件，保持原始格式（包括"!"）
+                    if (!tempConditions.includes(condition)) {
+                        tempConditions.push(condition);
+                        // 無論是否為否定條件，都只添加原始條件（不帶!）到全局條件集合
+                        const actualCondition = condition.startsWith('!') ? condition.substring(1) : condition;
+                        globalConditions.add(actualCondition);
+                        if (!conditionStates.has(actualCondition)) {
+                            conditionStates.set(actualCondition, false);
+                        }
                     }
                     updateConditionsEditList();
                     input.value = '';
@@ -1572,6 +1805,20 @@
                 if (event) {
                     tempEvents.push(event);
                     updateEventsEditList();
+                    input.value = '';
+                }
+            });
+
+            // 添加目標按鈕事件監聽器
+            document.getElementById('add-objective').addEventListener('click', () => {
+                const input = document.getElementById('new-objective');
+                const objective = input.value.trim();
+                if (objective) {
+                    if (!tempObjectives.includes(objective)) {
+                        tempObjectives.push(objective);
+                        globalObjectives.add(objective);
+                    }
+                    updateObjectivesEditList();
                     input.value = '';
                 }
             });
@@ -1598,6 +1845,17 @@
                 document.getElementById('events-editor').style.display = 'none';
             });
 
+            // 修改保存目標的處理器
+            document.getElementById('save-objectives').addEventListener('click', () => {
+                if (currentEditingNode) {
+                    currentEditingNode.objectives = [...tempObjectives];
+                    // 添加到全局目標集合
+                    tempObjectives.forEach(objective => globalObjectives.add(objective));
+                    updateObjectivesList(currentEditingNode.objectives);
+                }
+                document.getElementById('objectives-editor').style.display = 'none';
+            });
+
             // 取消條件編輯按鈕事件監聽器
             document.getElementById('cancel-conditions').addEventListener('click', () => {
                 document.getElementById('conditions-editor').style.display = 'none';
@@ -1606,6 +1864,11 @@
             // 取消事件編輯按鈕事件監聽器
             document.getElementById('cancel-events').addEventListener('click', () => {
                 document.getElementById('events-editor').style.display = 'none';
+            });
+
+            // 取消目標編輯按鈕事件監聽器
+            document.getElementById('cancel-objectives').addEventListener('click', () => {
+                document.getElementById('objectives-editor').style.display = 'none';
             });
 
             // 添加回車鍵提交功能
@@ -1650,9 +1913,13 @@
                 const container = document.getElementById('condition-list');
                 container.innerHTML = '';
                 
+                // 只顯示原始條件（不包含"!"的條件）
                 const sortedConditions = Array.from(globalConditions).sort();
                 
                 sortedConditions.forEach(condition => {
+                    // 跳過以"!"開頭的條件
+                    if (condition.startsWith('!')) return;
+                    
                     const item = document.createElement('div');
                     item.className = 'condition-item';
                     
@@ -1691,7 +1958,14 @@
 
                 // 檢查條件
                 nodes.forEach(node => {
-                    if (node.conditions.some(condition => conditionStates.get(condition) === false)) {
+                    if (node.conditions.some(condition => {
+                        if (condition.startsWith('!')) {
+                            const actualCondition = condition.substring(1);
+                            return conditionStates.get(actualCondition) === true; // 如果條件為 true，則否定條件不滿足
+                        } else {
+                            return conditionStates.get(condition) === false; // 如果條件為 false，則條件不滿足
+                        }
+                    })) {
                         node.isReachable = false;
                     }
                 });
@@ -1704,6 +1978,17 @@
                     return !edges.some(edge => edge.endNode === node);
                 });
 
+                // 對於沒有被指向的黑色節點，只保留順序編號最小的為可達
+                const blackStartNodes = startNodes.filter(node => !node.isRed && node.isReachable);
+                if (blackStartNodes.length > 1) {
+                    // 按順序編號排序
+                    blackStartNodes.sort((a, b) => (a.orderNumber || Infinity) - (b.orderNumber || Infinity));
+                    // 除了第一個（順序編號最小的）之外，其他都標記為不可達
+                    blackStartNodes.slice(1).forEach(node => {
+                        node.isReachable = false;
+                    });
+                }
+
                 // 使用 DFS 遍歷所有可達節點，並記錄選擇的路徑
                 function dfs(node) {
                     if (!node.isReachable) return; // 如果節點因條件而不可達，停止遍歷
@@ -1713,22 +1998,32 @@
                     // 獲取所有子節點
                     const childEdges = edges.filter(edge => edge.startNode === node);
                     if (childEdges.length > 0) {
-                        // 按照順序編號排序子節點
-                        const sortedChildren = childEdges
-                            .map(edge => edge.endNode)
-                            .filter(child => child.isReachable) // 只考慮條件允許可達的子節點
-                            .sort((a, b) => (a.orderNumber || Infinity) - (b.orderNumber || Infinity));
-
-                        // 如果有可達的子節點
-                        if (sortedChildren.length > 0) {
-                            // 只遍歷順序編號最小的子節點
-                            const selectedChild = sortedChildren[0];
-                            dfs(selectedChild);
-                            
-                            // 其他子節點標記為不可達
-                            sortedChildren.slice(1).forEach(child => {
-                                child.isReachable = false;
+                        // 獲取所有子節點
+                        const children = childEdges.map(edge => edge.endNode);
+                        
+                        if (!node.isRed) {
+                            // 黑色節點（NPC 選項）：所有滿足條件的子節點都可達
+                            children.forEach(child => {
+                                if (child.isReachable) { // 如果子節點滿足自己的條件
+                                    dfs(child);
+                                }
                             });
+                        } else {
+                            // 紅色節點（玩家選項）：按照順序編號排序，只有最小編號的可達
+                            const sortedChildren = children
+                                .filter(child => child.isReachable)
+                                .sort((a, b) => (a.orderNumber || Infinity) - (b.orderNumber || Infinity));
+
+                            if (sortedChildren.length > 0) {
+                                // 只遍歷順序編號最小的子節點
+                                const selectedChild = sortedChildren[0];
+                                dfs(selectedChild);
+                                
+                                // 其他子節點標記為不可達
+                                sortedChildren.slice(1).forEach(child => {
+                                    child.isReachable = false;
+                                });
+                            }
                         }
                     }
                 }
